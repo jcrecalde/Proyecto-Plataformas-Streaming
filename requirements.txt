@@ -1,4 +1,6 @@
 pandas 
 fastapi
 fastapi.responses
-uvicorn
+uvicorn 
+sklearn.metrics.pairwise   
+sklearn.feature_extraction.text

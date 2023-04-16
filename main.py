@@ -2,10 +2,14 @@ from fastapi import FastAPI
 import pandas as pd
 from fastapi.responses import JSONResponse
 
+# Librerias del modelo machin learning
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 app = FastAPI()
 
 # @app.get lo que hace es regristrar la funcion
-# uvicorn Api:app --reload para correr la fastApi. El reload hace que si hago un cambio solamente actualizando la pagina ya guarda todo
+# uvicorn main:app --reload para correr la fastApi. El reload hace que si hago un cambio solamente actualizando la pagina ya guarda todo
 # /docs para que en el https: me muestre las funciones
 # http://127.0.0.1:8000/
 
@@ -144,3 +148,34 @@ async def get_contents(rating: str):
     numero_contents = len(df)
 
     return {"Recomendacion": numero_contents}
+
+
+@app.get("/get_recommendation/{title}")
+async def get_recommendation(title: str):
+    # importo el csv de ML.csv que es donde se encuentra mi modelo de machine learning
+    df = pd.read_csv("ML.csv")
+    # Obtengo la fila correspondiente a la pelicula de interes
+    peliculas_idx = df[df["title"] == title].index[0]
+    # Creo una instancia de TfidfVectorizer y creo la matriz de frecuencia de términos
+    tfidf = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = tfidf.fit_transform(df["listed_in"])
+    # Calculo la similitud del coseno
+    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+    # Obtengo las peliculas por similitud
+    peliculas_similares = list(enumerate(cosine_sim[peliculas_idx]))
+    # Ordeno las peliculas por similitud
+    agregar_peliculas = sorted(
+        peliculas_similares, key=lambda x: x[1], reverse=True)
+    # Obtengo los indices de las 5 peliculas mas similares
+    top_similar = [i[0] for i in agregar_peliculas[1:6]]
+    # Obtengo los nombres de las pelicualas mas similares
+    top_similares_titulos = df["title"].iloc[top_similar]
+    # Obtengo los scores de las peliculas mas similares
+    top_similares_score = [agregar_peliculas[i][1] for i in top_similar]
+    # Obtengo las peliculas similares y a la ves que presentan mayor score
+    # Zip toma dos iterables y los combia en una lista de tuplas en este caso los 2 escores
+    # Desempaqueto las tuplas en la lista ordenada, donde _ representa la variable score y x el titulo.
+    peliculas_recomendadas = [x for _, x in sorted(
+        zip(top_similares_score, top_similares_titulos), reverse=True)][:5]
+
+    return {"titulo": peliculas_recomendadas}
