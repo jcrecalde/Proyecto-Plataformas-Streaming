@@ -6,6 +6,10 @@ from fastapi.responses import JSONResponse
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+df = pd.read_csv("plataformas.csv", usecols=['id', 'type', 'title', 'cast', 'country',
+                 'release_year', 'rating', 'listed_in', 'duration_int', 'duration_type', 'scored'])
+df2 = pd.read_csv("ML.csv")
+
 app = FastAPI()
 
 # @app.get lo que hace es regristrar la funcion
@@ -15,9 +19,7 @@ app = FastAPI()
 
 
 @app.get("/get_max_duration/{year}/{platform}/{duration_type}")
-async def get_max_duration(year: int, platform: str, duration_type: str):
-    # Cargar el archivo CSV en un DataFrame. Y le aclaro en parse_dates para indicarle a pandas que esa columna debe ser tratada como fecha en ves de cadena de caracteres
-    df = pd.read_csv("plataformas.csv", parse_dates=["date_added"])
+def get_max_duration(year: int, platform: str, duration_type: str):
 
     # Voy a indicarle en plataforma que me interesa la primer letra que es como le indique a la hora de crearlo para cada plataforma. (Ej:Netflix = n)
     # Tambien si el usuario ingresa en mayuscula que lo cambie a minuscula
@@ -25,20 +27,20 @@ async def get_max_duration(year: int, platform: str, duration_type: str):
     platfrom = platform.lower()[0]
 
     # Filtro por año de lanzamiento y por plataforma. Que tenga encuentra la primer letra de id
-    df = df[(df["release_year"] == year) & (df["id"].str.startswith(platfrom)) & (
+    data = df[(df["release_year"] == year) & (df["id"].str.startswith(platfrom)) & (
         df["duration_type"] == duration_type) & (df["type"] == "movie")]
 
     # En la condicion voy a indicar tanto la palabra en ingles como español
     if duration_type == "min" or duration_type == "duration" or duration_type == "duracion":
         # Filtro por duracion y que devuelva todos los datos
-        df_duration = df[df["duration_type"] == duration_type]
+        df_duration = data[data["duration_type"] == duration_type]
         max_duration = df_duration["duration_int"].max()
         max_duration_data = df_duration.loc[df_duration["duration_int"]
                                             == max_duration]
 
     # En este caso lo mismo, indico tanto el ingreso en ingles como español
     elif duration_type == "seasons" or duration_type == "temporada":
-        df_duration = df[df["duration_type"] == duration_type]
+        df_duration = data[data["duration_type"] == duration_type]
         max_duration = df_duration["duration_int"].max()
         max_duration_data = df_duration.loc[df_duration["duration_int"]
                                             == max_duration]
@@ -51,9 +53,7 @@ async def get_max_duration(year: int, platform: str, duration_type: str):
 
 
 @app.get("/get_score_count/{platform}/{scored}/{year}")
-async def get_score_count(platform: str, scored: float, year: int) -> int:
-
-    df = pd.read_csv("plataformas.csv", parse_dates=["date_added"])
+def get_score_count(platform: str, scored: float, year: int) -> int:
 
     # Convierto a minúsculas y obtengo la primera letra de la plataforma
     platform = platform.lower()[0]
@@ -71,8 +71,7 @@ async def get_score_count(platform: str, scored: float, year: int) -> int:
 
 
 @app.get("/get_count_platform/{platform}")
-async def get_count_platform(platform):
-    df = pd.read_csv("plataformas.csv", parse_dates=["date_added"])
+def get_count_platform(platform):
     # Como anteriormente me voy a asegurar que lo que se ingrese lo pase a minusculas
     platform = platform.lower()
     platform = platform.lower()[0]
@@ -85,19 +84,17 @@ async def get_count_platform(platform):
 
 
 @app.get("/get_actor/{platform}/{year}")
-async def get_actor(platform: str, year: int):
-
-    df = pd.read_csv("plataformas.csv", parse_dates=["date_added"])
+def get_actor(platform: str, year: int):
 
     # Filtro por plataforma y año
     platform = platform.lower()[0]
-    df = df[(df["id"].str.startswith(platform)) & (
+    data = df[(df["id"].str.startswith(platform)) & (
         df["release_year"] == year) & (df["type"] == "movie")]
 
     # filtro una lista con todos los actores
     # Utilizo flatten para obtener un array de numpy unidimensional con todos los valores.
     # De esta manera, obtengo una lista de todos los actores presentes en el dataframe, sin importar en qué columna aparezcan.
-    actores = df["cast"].str.split(", ", expand=True).values.flatten()
+    actores = data["cast"].str.split(", ", expand=True).values.flatten()
 
     # Compruebo si la lista de actores está vacía O tenemos valores en NaN. Si esta condicion se cumple devuelvo "no hay datos".
     if actores.size == 0 or pd.isnull(actores).all():
@@ -115,18 +112,15 @@ async def get_actor(platform: str, year: int):
 
 
 @app.get("/prod_per_country/{tipo}/{pais}/{anio}")
-async def prod_per_country(tipo: str, pais: str, anio: int):
-    # Cargar el archivo CSV en un DataFrame.
-    df = pd.read_csv("plataformas.csv", parse_dates=["date_added"])
-
+def prod_per_country(tipo: str, pais: str, anio: int):
     # Filtro por tipo de contenido, país y año.
-    df = df[(df["type"] == tipo.lower()) & (
+    data = df[(df["type"] == tipo.lower()) & (
         df["country"] == pais) & (df["release_year"] == anio)]
 
     # Agrupo los datos por país, año y tipo de contenido, y cuento la cantidad de productos en cada grupo.
     # Un count del grupo para que me cuente la cantidad de veces que aparece cada combinacion unica de las 3 columnas
     # Reset_index elimino el indice actual y lo reemplazo por una secuencia numerica para hacer mas facil contarlos
-    cantidad_producto = df.groupby(["country", "release_year", "type"]).count()[
+    cantidad_producto = data.groupby(["country", "release_year", "type"]).count()[
         "id"].reset_index()
 
     # Accedo al valor de la columna id de la primera fila del df can tidad_producto. Y despues si la cantidad es mayor a 0 muestro la cantidad si no 0.
@@ -137,28 +131,25 @@ async def prod_per_country(tipo: str, pais: str, anio: int):
 
 
 @app.get("/get_contents/{rating}")
-async def get_contents(rating: str):
-    # Cargar el archivo CSV en un DataFrame.
-    df = pd.read_csv("plataformas.csv", parse_dates=["date_added"])
+def get_contents(rating: str):
 
     # Filtro por rating de audiencia.
-    df = df[df["rating"] == rating]
+    data = df[df["rating"] == rating]
 
     # Cuento la cantidad de productos que cumplen con la condición.
-    numero_contents = len(df)
+    numero_contents = len(data)
 
     return {"Recomendacion": numero_contents}
 
 
 @app.get("/get_recommendation/{title}")
-async def get_recommendation(title: str):
-    # importo el csv de ML.csv que es donde se encuentra mi modelo de machine learning
-    df = pd.read_csv("ML.csv")
+def get_recommendation(title: str):
+    title = title.lower()
     # Obtengo la fila correspondiente a la pelicula de interes
-    peliculas_idx = df[df["title"] == title].index[0]
+    peliculas_idx = df2[df2["title"] == title].index[0]
     # Creo una instancia de TfidfVectorizer y creo la matriz de frecuencia de términos
     tfidf = TfidfVectorizer(stop_words="english")
-    tfidf_matrix = tfidf.fit_transform(df["listed_in"])
+    tfidf_matrix = tfidf.fit_transform(df2["listed_in"])
     # Calculo la similitud del coseno
     cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
     # Obtengo las peliculas por similitud
@@ -169,7 +160,7 @@ async def get_recommendation(title: str):
     # Obtengo los indices de las 5 peliculas mas similares
     top_similar = [i[0] for i in agregar_peliculas[1:6]]
     # Obtengo los nombres de las pelicualas mas similares
-    top_similares_titulos = df["title"].iloc[top_similar]
+    top_similares_titulos = df2["title"].iloc[top_similar]
     # Obtengo los scores de las peliculas mas similares
     top_similares_score = [agregar_peliculas[i][1] for i in top_similar]
     # Obtengo las peliculas similares y a la ves que presentan mayor score
