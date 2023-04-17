@@ -47,7 +47,7 @@ En este repositorio se encuentran diferentes elementos que conforman el proyecto
 - scikit-learn (TfidfVectorizer - cosine_similarity) 
  
 # Links:
-Video Explicativo de la API:
+Video Explicativo de la API:https://www.youtube.com/watch?v=XOceBlqJRco
 
 Deploy de la API en Render:https://pi-pkk4.onrender.com/docs
 
