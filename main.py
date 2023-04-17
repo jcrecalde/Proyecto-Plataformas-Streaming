@@ -19,12 +19,12 @@ app = FastAPI()
 
 
 @app.get("/get_max_duration/{year}/{platform}/{duration_type}")
-def get_max_duration(year: int, platform: str, duration_type: str):
+def get_max_duration(year: int, plataforma: str, duration_type: str):
 
     # Voy a indicarle en plataforma que me interesa la primer letra que es como le indique a la hora de crearlo para cada plataforma. (Ej:Netflix = n)
     # Tambien si el usuario ingresa en mayuscula que lo cambie a minuscula
     duration_type = duration_type.lower()
-    platfrom = platform.lower()[0]
+    platfrom = plataforma.lower()[0]
 
     # Filtro por año de lanzamiento y por plataforma. Que tenga encuentra la primer letra de id
     data = df[(df["release_year"] == year) & (df["id"].str.startswith(platfrom)) & (
@@ -53,10 +53,10 @@ def get_max_duration(year: int, platform: str, duration_type: str):
 
 
 @app.get("/get_score_count/{platform}/{scored}/{year}")
-def get_score_count(platform: str, scored: float, year: int) -> int:
+def get_score_count(plataforma: str, scored: float, year: int) -> int:
 
     # Convierto a minúsculas y obtengo la primera letra de la plataforma
-    platform = platform.lower()[0]
+    platform = plataforma.lower()[0]
 
     # Filtro el df para que sea pelicula solamente,
     # selecciono todas las filas que tienen el valor de id que comienza con la letra que representa la plataforma(startswith)
@@ -67,27 +67,27 @@ def get_score_count(platform: str, scored: float, year: int) -> int:
     resultado = len(df_filtrado)
     # Necesite hacer el JSONResponse porque el dato de algunas variables que no pueden ser almacenado o transmitido por ellos es neceario transformarlo a formato JSON
     # Que es el formato que utiliza fastApi
-    return JSONResponse(content={"plataforma": platform, "cantidad": resultado, "anio": year, "score": scored})
+    return JSONResponse(content={"plataforma": plataforma, "cantidad": resultado, "anio": year, "score": scored})
 
 
 @app.get("/get_count_platform/{platform}")
-def get_count_platform(platform):
+def get_count_platform(plataforma):
     # Como anteriormente me voy a asegurar que lo que se ingrese lo pase a minusculas
-    platform = platform.lower()
-    platform = platform.lower()[0]
+    platform = plataforma.lower()
+    platform = plataforma.lower()[0]
     # filtro
     df_filtrado = df.loc[(df["type"] == "movie") & (
         df["id"].str.startswith(platform))]
     # Ahora cuento la cantidad de filas del df_filtrado con las condiciones y selecciono el primer elemento
     count = df_filtrado.shape[0]
-    return {"plataforma": platform, "peliculas": count}
+    return {"plataforma": plataforma, "peliculas": count}
 
 
 @app.get("/get_actor/{platform}/{year}")
-def get_actor(platform: str, year: int):
+def get_actor(plataforma: str, year: int):
 
     # Filtro por plataforma y año
-    platform = platform.lower()[0]
+    platform = plataforma.lower()[0]
     data = df[(df["id"].str.startswith(platform)) & (
         df["release_year"] == year) & (df["type"] == "movie")]
 
@@ -108,7 +108,7 @@ def get_actor(platform: str, year: int):
 
     # Devuelvo el actor que mas se repitio por plataforma y la cantidad de veces que aparecio.
     # A top_count lo paso a int para que lo tome la fast api
-    return {"plataform": platform, "anio": year, "actor": top_actor, "cantidad": int(top_count)}
+    return {"plataforma": plataforma, "anio": year, "actor": top_actor, "cantidad": int(top_count)}
 
 
 @app.get("/prod_per_country/{tipo}/{pais}/{anio}")
