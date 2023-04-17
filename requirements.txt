@@ -2,5 +2,4 @@ pandas
 fastapi
 fastapi.responses
 uvicorn 
-sklearn.metrics.pairwise   
-sklearn.feature_extraction.text
+scikit-learn
